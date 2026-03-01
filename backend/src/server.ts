@@ -33,6 +33,12 @@ export async function createServer(): Promise<Hapi.Server> {
         .response({ error: { statusCode, message } })
         .code(statusCode);
     }
+    if ("statusCode" in response) {
+      console.log(`${response.statusCode} - [${request.method.toUpperCase()} ${request.path}]`);
+    } else {
+        console.log(`[${request.method.toUpperCase()} ${request.path}]`);
+    }
+
     return h.continue;
   });
 
