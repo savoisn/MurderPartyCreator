@@ -2,6 +2,9 @@
 import { ref, onMounted } from "vue";
 import type { Scenario } from "../types/scenario";
 import { fetchScenarios, deleteScenario } from "../api/scenarios";
+import { useAuth } from "../composables/useAuth";
+
+const { isCreator } = useAuth();
 
 const scenarios = ref<Scenario[]>([]);
 const loading = ref(true);
@@ -39,6 +42,7 @@ const difficultyColors: Record<string, string> = {
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900">Scenarios</h1>
       <RouterLink
+        v-if="isCreator"
         to="/scenarios/new"
         class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
       >
@@ -50,7 +54,8 @@ const difficultyColors: Record<string, string> = {
     <p v-else-if="error" class="text-red-600">{{ error }}</p>
 
     <div v-else-if="scenarios.length === 0" class="text-center py-12 text-gray-500">
-      No scenarios yet. Create your first one!
+      <p v-if="isCreator">No scenarios yet. Create your first one!</p>
+      <p v-else>No scenarios available.</p>
     </div>
 
     <div v-else class="space-y-4">
@@ -65,6 +70,7 @@ const difficultyColors: Record<string, string> = {
             <p class="mt-1 text-sm text-gray-600">{{ scenario.description }}</p>
           </div>
           <button
+            v-if="isCreator"
             @click="handleDelete(scenario.id)"
             class="ml-4 text-sm text-red-600 hover:text-red-800"
           >

@@ -5,7 +5,13 @@ import {
   cleanDb,
   createTestScenario,
   createTestClue,
+  createTestUser,
+  getAuthCookie,
+  apiBase,
 } from "./helpers.js";
+
+let testUser: { id: string; email: string; role: string };
+let authCookie: string;
 
 afterAll(async () => {
   await cleanDb();
@@ -17,7 +23,9 @@ describe("Clues", () => {
 
   beforeEach(async () => {
     await cleanDb();
-    const scenario = await createTestScenario();
+    testUser = await createTestUser();
+    authCookie = getAuthCookie(testUser);
+    const scenario = await createTestScenario(testUser.id);
     scenarioId = scenario.id;
   });
 
@@ -26,7 +34,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/clues`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.payload)).toEqual({ data: [] });
@@ -39,7 +48,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/clues`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues`,
+        headers: { cookie: authCookie },
       });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(200);
@@ -52,7 +62,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: "/scenarios/00000000-0000-0000-0000-000000000000/clues",
+        url: `${apiBase}/scenarios/00000000-0000-0000-0000-000000000000/clues`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
@@ -63,7 +74,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/scenarios/${scenarioId}/clues`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues`,
+        headers: { cookie: authCookie },
         payload: {
           title: "Bloody Knife",
           description: "Found under the bed",
@@ -81,7 +93,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/scenarios/${scenarioId}/clues`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues`,
+        headers: { cookie: authCookie },
         payload: {
           title: "Missing Order",
           description: "A clue without order",
@@ -94,7 +107,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/scenarios/${scenarioId}/clues`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues`,
+        headers: { cookie: authCookie },
         payload: {
           title: "Bad Type",
           description: "Invalid",
@@ -113,7 +127,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/clues/${clue.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues/${clue.id}`,
+        headers: { cookie: authCookie },
       });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(200);
@@ -124,7 +139,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/clues/00000000-0000-0000-0000-000000000000`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
@@ -137,7 +153,8 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PUT",
-        url: `/scenarios/${scenarioId}/clues/${clue.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues/${clue.id}`,
+        headers: { cookie: authCookie },
         payload: { title: "Updated Clue", type: "testimony" },
       });
       const body = JSON.parse(res.payload);
@@ -154,13 +171,15 @@ describe("Clues", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "DELETE",
-        url: `/scenarios/${scenarioId}/clues/${clue.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues/${clue.id}`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(204);
 
       const getRes = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/clues/${clue.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/clues/${clue.id}`,
+        headers: { cookie: authCookie },
       });
       expect(getRes.statusCode).toBe(404);
     });

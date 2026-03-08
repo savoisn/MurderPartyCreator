@@ -10,7 +10,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export async function fetchScenarios(): Promise<Scenario[]> {
-  const response = await fetch("/api/scenarios");
+  const response = await fetch("/api/scenarios", { credentials: "include" });
   return handleResponse<Scenario[]>(response);
 }
 
@@ -18,13 +18,17 @@ export async function createScenario(input: CreateScenarioInput): Promise<Scenar
   const response = await fetch("/api/scenarios", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(input),
   });
   return handleResponse<Scenario>(response);
 }
 
 export async function deleteScenario(id: string): Promise<void> {
-  const response = await fetch(`/api/scenarios/${id}`, { method: "DELETE" });
+  const response = await fetch(`/api/scenarios/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.error?.message ?? `Request failed (${response.status})`);

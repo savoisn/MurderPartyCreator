@@ -13,12 +13,14 @@ export const sessionRoutes: ServerRoute[] = [
   {
     method: "GET",
     path: "/sessions",
+    options: { auth: "jwt" },
     handler: handlers.listSessions,
   },
   {
     method: "POST",
     path: "/sessions",
     options: {
+      auth: "jwt",
       validate: { payload: createSessionPayload },
     },
     handler: handlers.createSession,
@@ -27,6 +29,7 @@ export const sessionRoutes: ServerRoute[] = [
     method: "GET",
     path: "/sessions/{sessionId}",
     options: {
+      auth: "jwt",
       validate: { params: sessionParams },
     },
     handler: handlers.getSession,
@@ -35,6 +38,7 @@ export const sessionRoutes: ServerRoute[] = [
     method: "PATCH",
     path: "/sessions/{sessionId}",
     options: {
+      auth: "jwt",
       validate: {
         params: sessionParams,
         payload: updateSessionPayload,
@@ -46,6 +50,7 @@ export const sessionRoutes: ServerRoute[] = [
     method: "DELETE",
     path: "/sessions/{sessionId}",
     options: {
+      auth: "jwt",
       validate: { params: sessionParams },
     },
     handler: handlers.deleteSession,
@@ -54,6 +59,7 @@ export const sessionRoutes: ServerRoute[] = [
     method: "POST",
     path: "/sessions/{sessionId}/players",
     options: {
+      auth: "jwt",
       validate: {
         params: sessionParams,
         payload: createSessionPlayerPayload,
@@ -65,6 +71,7 @@ export const sessionRoutes: ServerRoute[] = [
     method: "DELETE",
     path: "/sessions/{sessionId}/players/{playerId}",
     options: {
+      auth: "jwt",
       validate: { params: sessionPlayerParams },
     },
     handler: handlers.removePlayer,
@@ -73,6 +80,7 @@ export const sessionRoutes: ServerRoute[] = [
     method: "POST",
     path: "/sessions/{sessionId}/clues/{clueId}/reveal",
     options: {
+      auth: "jwt",
       validate: { params: sessionClueParams },
     },
     handler: handlers.revealClue,

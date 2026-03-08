@@ -1,12 +1,25 @@
 import { db } from "./index.js";
-import { scenarios, characters, clues } from "./schema.js";
+import { users, scenarios, characters, clues } from "./schema.js";
 
 async function seed() {
   console.log("Seeding database...");
 
+  // Create a seed user
+  const [seedUser] = await db
+    .insert(users)
+    .values({
+      email: "creator@example.com",
+      name: "Seed Creator",
+      provider: "github",
+      providerId: "seed-0",
+      role: "creator",
+    })
+    .returning();
+
   const [scenario] = await db
     .insert(scenarios)
     .values({
+      userId: seedUser.id,
       title: "Murder at the Grand Hotel",
       description:
         "A wealthy businessman is found dead in the library of the Grand Hotel during a stormy night. All guests are suspects.",

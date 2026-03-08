@@ -7,10 +7,13 @@ import {
   createTestCharacter,
   createTestClue,
   createTestSession,
+  createTestUser,
+  getAuthCookie,
+  apiBase,
 } from "./helpers.js";
-import { db } from "../src/db/index.js";
-import { sessions } from "../src/db/schema.js";
-import { eq } from "drizzle-orm";
+
+let testUser: { id: string; email: string; role: string };
+let authCookie: string;
 
 afterAll(async () => {
   await cleanDb();
@@ -22,14 +25,20 @@ describe("Sessions", () => {
 
   beforeEach(async () => {
     await cleanDb();
-    const scenario = await createTestScenario();
+    testUser = await createTestUser();
+    authCookie = getAuthCookie(testUser);
+    const scenario = await createTestScenario(testUser.id);
     scenarioId = scenario.id;
   });
 
   describe("GET /sessions", () => {
     it("returns empty array when no sessions exist", async () => {
       const server = await getServer();
-      const res = await server.inject({ method: "GET", url: "/sessions" });
+      const res = await server.inject({
+        method: "GET",
+        url: `${apiBase}/sessions`,
+        headers: { cookie: authCookie },
+      });
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.payload)).toEqual({ data: [] });
     });
@@ -39,7 +48,11 @@ describe("Sessions", () => {
       await createTestSession(scenarioId);
 
       const server = await getServer();
-      const res = await server.inject({ method: "GET", url: "/sessions" });
+      const res = await server.inject({
+        method: "GET",
+        url: `${apiBase}/sessions`,
+        headers: { cookie: authCookie },
+      });
       const body = JSON.parse(res.payload);
       expect(body.data).toHaveLength(2);
     });
@@ -50,7 +63,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/sessions",
+        url: `${apiBase}/sessions`,
+        headers: { cookie: authCookie },
         payload: { scenarioId },
       });
       const body = JSON.parse(res.payload);
@@ -63,7 +77,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/sessions",
+        url: `${apiBase}/sessions`,
+        headers: { cookie: authCookie },
         payload: {
           scenarioId,
           scheduledAt: "2026-03-15T19:00:00.000Z",
@@ -78,7 +93,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/sessions",
+        url: `${apiBase}/sessions`,
+        headers: { cookie: authCookie },
         payload: { scenarioId: "00000000-0000-0000-0000-000000000000" },
       });
       expect(res.statusCode).toBe(404);
@@ -92,7 +108,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/sessions/${session.id}`,
+        url: `${apiBase}/sessions/${session.id}`,
+        headers: { cookie: authCookie },
       });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(200);
@@ -105,7 +122,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: "/sessions/00000000-0000-0000-0000-000000000000",
+        url: `${apiBase}/sessions/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
@@ -118,7 +136,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PATCH",
-        url: `/sessions/${session.id}`,
+        url: `${apiBase}/sessions/${session.id}`,
+        headers: { cookie: authCookie },
         payload: { status: "active" },
       });
       const body = JSON.parse(res.payload);
@@ -132,7 +151,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PATCH",
-        url: `/sessions/${session.id}`,
+        url: `${apiBase}/sessions/${session.id}`,
+        headers: { cookie: authCookie },
         payload: { status: "completed" },
       });
       const body = JSON.parse(res.payload);
@@ -146,7 +166,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PATCH",
-        url: `/sessions/${session.id}`,
+        url: `${apiBase}/sessions/${session.id}`,
+        headers: { cookie: authCookie },
         payload: { status: "completed" },
       });
       expect(res.statusCode).toBe(400);
@@ -158,7 +179,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PATCH",
-        url: `/sessions/${session.id}`,
+        url: `${apiBase}/sessions/${session.id}`,
+        headers: { cookie: authCookie },
         payload: { status: "draft" },
       });
       expect(res.statusCode).toBe(400);
@@ -172,7 +194,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "DELETE",
-        url: `/sessions/${session.id}`,
+        url: `${apiBase}/sessions/${session.id}`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(204);
     });
@@ -188,7 +211,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/sessions/${session.id}/players`,
+        url: `${apiBase}/sessions/${session.id}/players`,
+        headers: { cookie: authCookie },
         payload: {
           characterId: character.id,
           playerName: "Alice",
@@ -201,14 +225,15 @@ describe("Sessions", () => {
     });
 
     it("rejects character from a different scenario", async () => {
-      const otherScenario = await createTestScenario({ title: "Other" });
+      const otherScenario = await createTestScenario(testUser.id, { title: "Other" });
       const otherCharacter = await createTestCharacter(otherScenario.id);
       const session = await createTestSession(scenarioId);
 
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/sessions/${session.id}/players`,
+        url: `${apiBase}/sessions/${session.id}/players`,
+        headers: { cookie: authCookie },
         payload: {
           characterId: otherCharacter.id,
           playerName: "Hacker",
@@ -223,7 +248,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/sessions/00000000-0000-0000-0000-000000000000/players",
+        url: `${apiBase}/sessions/00000000-0000-0000-0000-000000000000/players`,
+        headers: { cookie: authCookie },
         payload: { characterId: character.id, playerName: "Nobody" },
       });
       expect(res.statusCode).toBe(404);
@@ -238,14 +264,16 @@ describe("Sessions", () => {
       const server = await getServer();
       const addRes = await server.inject({
         method: "POST",
-        url: `/sessions/${session.id}/players`,
+        url: `${apiBase}/sessions/${session.id}/players`,
+        headers: { cookie: authCookie },
         payload: { characterId: character.id, playerName: "Alice" },
       });
       const playerId = JSON.parse(addRes.payload).data.id;
 
       const res = await server.inject({
         method: "DELETE",
-        url: `/sessions/${session.id}/players/${playerId}`,
+        url: `${apiBase}/sessions/${session.id}/players/${playerId}`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(204);
     });
@@ -256,7 +284,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "DELETE",
-        url: `/sessions/${session.id}/players/00000000-0000-0000-0000-000000000000`,
+        url: `${apiBase}/sessions/${session.id}/players/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
@@ -270,7 +299,8 @@ describe("Sessions", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/sessions/${session.id}/clues/${clue.id}/reveal`,
+        url: `${apiBase}/sessions/${session.id}/clues/${clue.id}/reveal`,
+        headers: { cookie: authCookie },
       });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(201);
@@ -285,25 +315,28 @@ describe("Sessions", () => {
       const server = await getServer();
       await server.inject({
         method: "POST",
-        url: `/sessions/${session.id}/clues/${clue.id}/reveal`,
+        url: `${apiBase}/sessions/${session.id}/clues/${clue.id}/reveal`,
+        headers: { cookie: authCookie },
       });
 
       const res = await server.inject({
         method: "POST",
-        url: `/sessions/${session.id}/clues/${clue.id}/reveal`,
+        url: `${apiBase}/sessions/${session.id}/clues/${clue.id}/reveal`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(409);
     });
 
     it("rejects clue from a different scenario", async () => {
-      const otherScenario = await createTestScenario({ title: "Other" });
+      const otherScenario = await createTestScenario(testUser.id, { title: "Other" });
       const otherClue = await createTestClue(otherScenario.id);
       const session = await createTestSession(scenarioId);
 
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/sessions/${session.id}/clues/${otherClue.id}/reveal`,
+        url: `${apiBase}/sessions/${session.id}/clues/${otherClue.id}/reveal`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(400);
     });

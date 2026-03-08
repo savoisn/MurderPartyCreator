@@ -7,7 +7,10 @@ import {
   integer,
   timestamp,
   pgEnum,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+
+export const userRoleEnum = pgEnum("user_role", ["player", "creator"]);
 
 export const difficultyEnum = pgEnum("difficulty", [
   "easy",
@@ -28,8 +31,51 @@ export const clueTypeEnum = pgEnum("clue_type", [
   "environmental",
 ]);
 
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    email: varchar("email", { length: 255 }).notNull().unique(),
+    name: varchar("name", { length: 255 }),
+    avatarUrl: varchar("avatar_url", { length: 500 }),
+    provider: varchar("provider", { length: 50 }).notNull(),
+    providerId: varchar("provider_id", { length: 255 }).notNull(),
+    role: userRoleEnum("role").default("player").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("users_provider_provider_id_idx").on(
+      table.provider,
+      table.providerId,
+    ),
+  ],
+);
+
+export const userEventTypeEnum = pgEnum("user_event_type", [
+  "creation",
+  "login",
+  "logout",
+  "role_change",
+  "profile_update",
+]);
+
+export const userEvents = pgTable("user_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: userEventTypeEnum("type").notNull(),
+  provider: varchar("provider", { length: 50 }),
+  providerId: varchar("provider_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const scenarios = pgTable("scenarios", {
   id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
   setting: varchar("setting", { length: 255 }),

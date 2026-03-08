@@ -8,6 +8,27 @@
       "when": 1771407764916,
       "tag": "0000_watery_black_cat",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772381460288,
+      "tag": "0001_wandering_onslaught",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772725719655,
+      "tag": "0002_grey_quentin_quire",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772727697360,
+      "tag": "0003_smiling_screwball",
+      "breakpoints": true
     }
   ]
 }

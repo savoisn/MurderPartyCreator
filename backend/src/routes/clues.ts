@@ -12,6 +12,7 @@ export const clueRoutes: ServerRoute[] = [
     method: "GET",
     path: "/scenarios/{scenarioId}/clues",
     options: {
+      auth: "jwt",
       validate: { params: scenarioParams },
     },
     handler: handlers.listClues,
@@ -20,6 +21,7 @@ export const clueRoutes: ServerRoute[] = [
     method: "POST",
     path: "/scenarios/{scenarioId}/clues",
     options: {
+      auth: "jwt",
       validate: {
         params: scenarioParams,
         payload: createCluePayload,
@@ -31,6 +33,7 @@ export const clueRoutes: ServerRoute[] = [
     method: "GET",
     path: "/scenarios/{scenarioId}/clues/{clueId}",
     options: {
+      auth: "jwt",
       validate: { params: clueParams },
     },
     handler: handlers.getClue,
@@ -39,6 +42,7 @@ export const clueRoutes: ServerRoute[] = [
     method: "PUT",
     path: "/scenarios/{scenarioId}/clues/{clueId}",
     options: {
+      auth: "jwt",
       validate: {
         params: clueParams,
         payload: updateCluePayload,
@@ -50,6 +54,7 @@ export const clueRoutes: ServerRoute[] = [
     method: "DELETE",
     path: "/scenarios/{scenarioId}/clues/{clueId}",
     options: {
+      auth: "jwt",
       validate: { params: clueParams },
     },
     handler: handlers.deleteClue,

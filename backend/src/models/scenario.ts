@@ -2,6 +2,7 @@ export type Difficulty = "easy" | "medium" | "hard";
 
 export interface Scenario {
   id: string;
+  userId: string;
   title: string;
   description: string;
   setting: string | null;

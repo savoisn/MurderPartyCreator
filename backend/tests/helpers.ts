@@ -9,7 +9,14 @@ import {
   clues,
   characters,
   scenarios,
+  userEvents,
+  users,
 } from "../src/db/schema.js";
+import { signJwt } from "../src/auth/jwt.js";
+import { config } from "../src/config.js";
+
+export const apiBase = config.apiPrefix;
+import type { User } from "../src/models/user.js";
 
 let server: Hapi.Server;
 
@@ -35,12 +42,40 @@ export async function cleanDb(): Promise<void> {
   await db.delete(clues);
   await db.delete(characters);
   await db.delete(scenarios);
+  await db.delete(userEvents);
+  await db.delete(users);
 }
 
-export async function createTestScenario(overrides: Record<string, unknown> = {}) {
+export async function createTestUser(
+  overrides: Record<string, unknown> = {},
+) {
+  const [user] = await db
+    .insert(users)
+    .values({
+      email: "test@example.com",
+      name: "Test User",
+      provider: "github",
+      providerId: "123456",
+      role: "creator",
+      ...overrides,
+    })
+    .returning();
+  return user;
+}
+
+export function getAuthCookie(user: { id: string; email: string; role: string }): string {
+  const token = signJwt(user as User);
+  return `${config.cookieName}=${token}`;
+}
+
+export async function createTestScenario(
+  userId: string,
+  overrides: Record<string, unknown> = {},
+) {
   const [scenario] = await db
     .insert(scenarios)
     .values({
+      userId,
       title: "Test Scenario",
       description: "A test murder mystery",
       setting: "Test Manor",

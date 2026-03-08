@@ -5,7 +5,13 @@ import {
   cleanDb,
   createTestScenario,
   createTestCharacter,
+  createTestUser,
+  getAuthCookie,
+  apiBase,
 } from "./helpers.js";
+
+let testUser: { id: string; email: string; role: string };
+let authCookie: string;
 
 afterAll(async () => {
   await cleanDb();
@@ -17,7 +23,9 @@ describe("Characters", () => {
 
   beforeEach(async () => {
     await cleanDb();
-    const scenario = await createTestScenario();
+    testUser = await createTestUser();
+    authCookie = getAuthCookie(testUser);
+    const scenario = await createTestScenario(testUser.id);
     scenarioId = scenario.id;
   });
 
@@ -26,7 +34,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/characters`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.payload)).toEqual({ data: [] });
@@ -39,7 +48,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/characters`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters`,
+        headers: { cookie: authCookie },
       });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(200);
@@ -50,7 +60,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: "/scenarios/00000000-0000-0000-0000-000000000000/characters",
+        url: `${apiBase}/scenarios/00000000-0000-0000-0000-000000000000/characters`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
@@ -61,7 +72,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/scenarios/${scenarioId}/characters`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters`,
+        headers: { cookie: authCookie },
         payload: {
           name: "Lady Victoria",
           description: "A wealthy socialite",
@@ -80,7 +92,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/scenarios/${scenarioId}/characters`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters`,
+        headers: { cookie: authCookie },
         payload: {
           name: "John",
           description: "A simple man",
@@ -95,7 +108,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: `/scenarios/${scenarioId}/characters`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters`,
+        headers: { cookie: authCookie },
         payload: { description: "No name" },
       });
       expect(res.statusCode).toBe(400);
@@ -105,7 +119,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/scenarios/00000000-0000-0000-0000-000000000000/characters",
+        url: `${apiBase}/scenarios/00000000-0000-0000-0000-000000000000/characters`,
+        headers: { cookie: authCookie },
         payload: { name: "Ghost", description: "Spooky" },
       });
       expect(res.statusCode).toBe(404);
@@ -119,7 +134,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/characters/${character.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters/${character.id}`,
+        headers: { cookie: authCookie },
       });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(200);
@@ -130,7 +146,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/characters/00000000-0000-0000-0000-000000000000`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
@@ -143,7 +160,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PUT",
-        url: `/scenarios/${scenarioId}/characters/${character.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters/${character.id}`,
+        headers: { cookie: authCookie },
         payload: { name: "Updated Name", isMurderer: true },
       });
       const body = JSON.parse(res.payload);
@@ -156,7 +174,8 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PUT",
-        url: `/scenarios/${scenarioId}/characters/00000000-0000-0000-0000-000000000000`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
         payload: { name: "Nope" },
       });
       expect(res.statusCode).toBe(404);
@@ -170,13 +189,15 @@ describe("Characters", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "DELETE",
-        url: `/scenarios/${scenarioId}/characters/${character.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters/${character.id}`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(204);
 
       const getRes = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenarioId}/characters/${character.id}`,
+        url: `${apiBase}/scenarios/${scenarioId}/characters/${character.id}`,
+        headers: { cookie: authCookie },
       });
       expect(getRes.statusCode).toBe(404);
     });

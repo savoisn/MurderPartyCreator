@@ -12,6 +12,7 @@ export const characterRoutes: ServerRoute[] = [
     method: "GET",
     path: "/scenarios/{scenarioId}/characters",
     options: {
+      auth: "jwt",
       validate: { params: scenarioParams },
     },
     handler: handlers.listCharacters,
@@ -20,6 +21,7 @@ export const characterRoutes: ServerRoute[] = [
     method: "POST",
     path: "/scenarios/{scenarioId}/characters",
     options: {
+      auth: "jwt",
       validate: {
         params: scenarioParams,
         payload: createCharacterPayload,
@@ -31,6 +33,7 @@ export const characterRoutes: ServerRoute[] = [
     method: "GET",
     path: "/scenarios/{scenarioId}/characters/{characterId}",
     options: {
+      auth: "jwt",
       validate: { params: characterParams },
     },
     handler: handlers.getCharacter,
@@ -39,6 +42,7 @@ export const characterRoutes: ServerRoute[] = [
     method: "PUT",
     path: "/scenarios/{scenarioId}/characters/{characterId}",
     options: {
+      auth: "jwt",
       validate: {
         params: characterParams,
         payload: updateCharacterPayload,
@@ -50,6 +54,7 @@ export const characterRoutes: ServerRoute[] = [
     method: "DELETE",
     path: "/scenarios/{scenarioId}/characters/{characterId}",
     options: {
+      auth: "jwt",
       validate: { params: characterParams },
     },
     handler: handlers.deleteCharacter,

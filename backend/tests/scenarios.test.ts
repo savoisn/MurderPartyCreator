@@ -1,5 +1,16 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
-import { getServer, closeServer, cleanDb, createTestScenario } from "./helpers.js";
+import {
+  getServer,
+  closeServer,
+  cleanDb,
+  createTestScenario,
+  createTestUser,
+  getAuthCookie,
+  apiBase,
+} from "./helpers.js";
+
+let testUser: { id: string; email: string; role: string };
+let authCookie: string;
 
 afterAll(async () => {
   await cleanDb();
@@ -9,25 +20,41 @@ afterAll(async () => {
 describe("Scenarios", () => {
   beforeEach(async () => {
     await cleanDb();
+    testUser = await createTestUser();
+    authCookie = getAuthCookie(testUser);
   });
 
   describe("GET /scenarios", () => {
     it("returns empty array when no scenarios exist", async () => {
       const server = await getServer();
-      const res = await server.inject({ method: "GET", url: "/scenarios" });
+      const res = await server.inject({
+        method: "GET",
+        url: `${apiBase}/scenarios`,
+        headers: { cookie: authCookie },
+      });
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.payload)).toEqual({ data: [] });
     });
 
     it("returns all scenarios", async () => {
-      await createTestScenario({ title: "Scenario 1" });
-      await createTestScenario({ title: "Scenario 2" });
+      await createTestScenario(testUser.id, { title: "Scenario 1" });
+      await createTestScenario(testUser.id, { title: "Scenario 2" });
 
       const server = await getServer();
-      const res = await server.inject({ method: "GET", url: "/scenarios" });
+      const res = await server.inject({
+        method: "GET",
+        url: `${apiBase}/scenarios`,
+        headers: { cookie: authCookie },
+      });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(200);
       expect(body.data).toHaveLength(2);
+    });
+
+    it("returns 401 without auth", async () => {
+      const server = await getServer();
+      const res = await server.inject({ method: "GET", url: `${apiBase}/scenarios` });
+      expect(res.statusCode).toBe(401);
     });
   });
 
@@ -36,7 +63,8 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/scenarios",
+        url: `${apiBase}/scenarios`,
+        headers: { cookie: authCookie },
         payload: {
           title: "Murder at the Mansion",
           description: "A thrilling mystery",
@@ -54,7 +82,8 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/scenarios",
+        url: `${apiBase}/scenarios`,
+        headers: { cookie: authCookie },
         payload: {
           title: "The Grand Hotel Mystery",
           description: "Who killed the butler?",
@@ -75,7 +104,8 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/scenarios",
+        url: `${apiBase}/scenarios`,
+        headers: { cookie: authCookie },
         payload: { title: "No description" },
       });
       expect(res.statusCode).toBe(400);
@@ -85,7 +115,8 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "POST",
-        url: "/scenarios",
+        url: `${apiBase}/scenarios`,
+        headers: { cookie: authCookie },
         payload: {
           title: "Test",
           description: "Test",
@@ -94,16 +125,38 @@ describe("Scenarios", () => {
       });
       expect(res.statusCode).toBe(400);
     });
+
+    it("returns 403 for player role", async () => {
+      const player = await createTestUser({
+        email: "player@example.com",
+        providerId: "player1",
+        role: "player",
+      });
+      const playerCookie = getAuthCookie(player);
+
+      const server = await getServer();
+      const res = await server.inject({
+        method: "POST",
+        url: `${apiBase}/scenarios`,
+        headers: { cookie: playerCookie },
+        payload: {
+          title: "Test",
+          description: "Test",
+        },
+      });
+      expect(res.statusCode).toBe(403);
+    });
   });
 
   describe("GET /scenarios/{scenarioId}", () => {
     it("returns a scenario by id", async () => {
-      const scenario = await createTestScenario();
+      const scenario = await createTestScenario(testUser.id);
 
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenario.id}`,
+        url: `${apiBase}/scenarios/${scenario.id}`,
+        headers: { cookie: authCookie },
       });
       const body = JSON.parse(res.payload);
       expect(res.statusCode).toBe(200);
@@ -115,7 +168,8 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: "/scenarios/00000000-0000-0000-0000-000000000000",
+        url: `${apiBase}/scenarios/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
@@ -124,7 +178,8 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "GET",
-        url: "/scenarios/not-a-uuid",
+        url: `${apiBase}/scenarios/not-a-uuid`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(400);
     });
@@ -132,12 +187,13 @@ describe("Scenarios", () => {
 
   describe("PUT /scenarios/{scenarioId}", () => {
     it("updates a scenario", async () => {
-      const scenario = await createTestScenario();
+      const scenario = await createTestScenario(testUser.id);
 
       const server = await getServer();
       const res = await server.inject({
         method: "PUT",
-        url: `/scenarios/${scenario.id}`,
+        url: `${apiBase}/scenarios/${scenario.id}`,
+        headers: { cookie: authCookie },
         payload: { title: "Updated Title" },
       });
       const body = JSON.parse(res.payload);
@@ -150,19 +206,21 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "PUT",
-        url: "/scenarios/00000000-0000-0000-0000-000000000000",
+        url: `${apiBase}/scenarios/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
         payload: { title: "Nope" },
       });
       expect(res.statusCode).toBe(404);
     });
 
     it("returns 400 for empty payload", async () => {
-      const scenario = await createTestScenario();
+      const scenario = await createTestScenario(testUser.id);
 
       const server = await getServer();
       const res = await server.inject({
         method: "PUT",
-        url: `/scenarios/${scenario.id}`,
+        url: `${apiBase}/scenarios/${scenario.id}`,
+        headers: { cookie: authCookie },
         payload: {},
       });
       expect(res.statusCode).toBe(400);
@@ -171,19 +229,21 @@ describe("Scenarios", () => {
 
   describe("DELETE /scenarios/{scenarioId}", () => {
     it("deletes a scenario", async () => {
-      const scenario = await createTestScenario();
+      const scenario = await createTestScenario(testUser.id);
 
       const server = await getServer();
       const res = await server.inject({
         method: "DELETE",
-        url: `/scenarios/${scenario.id}`,
+        url: `${apiBase}/scenarios/${scenario.id}`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(204);
 
       // Verify it's gone
       const getRes = await server.inject({
         method: "GET",
-        url: `/scenarios/${scenario.id}`,
+        url: `${apiBase}/scenarios/${scenario.id}`,
+        headers: { cookie: authCookie },
       });
       expect(getRes.statusCode).toBe(404);
     });
@@ -192,7 +252,8 @@ describe("Scenarios", () => {
       const server = await getServer();
       const res = await server.inject({
         method: "DELETE",
-        url: "/scenarios/00000000-0000-0000-0000-000000000000",
+        url: `${apiBase}/scenarios/00000000-0000-0000-0000-000000000000`,
+        headers: { cookie: authCookie },
       });
       expect(res.statusCode).toBe(404);
     });
