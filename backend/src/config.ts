@@ -20,6 +20,7 @@ export const config = {
     process.env.COOKIE_PASSWORD ||
     "dev-cookie-password-change-in-production-min-32-chars!!",
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+  local: process.env.LOCAL || false,
 
   // OAuth providers (optional — Bell strategies only registered if set)
   github: {

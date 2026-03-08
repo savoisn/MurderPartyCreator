@@ -1,9 +1,15 @@
 import Hapi from "@hapi/hapi";
 import Bell from "@hapi/bell";
 import Cookie from "@hapi/cookie";
+import Inert from "@hapi/inert";
+import { fileURLToPath } from "url";
+import path from "path";
 import { config } from "./config.js";
 import { routes } from "./routes/index.js";
 import { jwtScheme } from "./auth/jwt-scheme.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distFrontPath = path.resolve(__dirname, "../dist_front");
 
 export async function createServer(): Promise<Hapi.Server> {
   const server = Hapi.server({
@@ -23,7 +29,7 @@ export async function createServer(): Promise<Hapi.Server> {
   });
 
   // Register auth plugins
-  await server.register([Bell, Cookie]);
+  await server.register([Bell, Cookie, Inert]);
 
   // JWT auth scheme + strategy (reads token from httpOnly cookie)
   server.auth.scheme("jwt-cookie", jwtScheme);
@@ -36,8 +42,8 @@ export async function createServer(): Promise<Hapi.Server> {
       password: config.cookiePassword,
       clientId: config.github.clientId,
       clientSecret: config.github.clientSecret,
-      isSecure: config.nodeEnv === "production",
-      location: config.frontendUrl + "/api",
+      isSecure: config.nodeEnv === "production" && !config.local,
+      location: config.frontendUrl + (config.local ? "" : "/api"),
     });
   }
 
@@ -47,8 +53,8 @@ export async function createServer(): Promise<Hapi.Server> {
       password: config.cookiePassword,
       clientId: config.google.clientId,
       clientSecret: config.google.clientSecret,
-      isSecure: config.nodeEnv === "production",
-      location: config.frontendUrl + "/api",
+      isSecure: config.nodeEnv === "production" && !config.local ,
+      location: config.frontendUrl + (config.local ? "" : "/api"),
     });
   }
 
@@ -65,6 +71,27 @@ export async function createServer(): Promise<Hapi.Server> {
     },
     config.apiPrefix ? { routes: { prefix: config.apiPrefix } } : {},
   );
+
+  console.log("Registering? static file routes for production?");
+  console.log(config.nodeEnv);
+  if (config.nodeEnv === "production") {
+    console.log("Registering static file routes for production");
+    server.route([
+      {
+        method: "GET",
+        path: "/assets/{param*}",
+        handler: {
+          directory: { path: path.join(distFrontPath, "assets") },
+        },
+      },
+      {
+        method: "GET",
+        path: "/{param*}",
+        handler: (_request, h) =>
+          h.file(path.join(distFrontPath, "index.html")),
+      },
+    ]);
+  }
 
   server.ext("onPreResponse", (request, h) => {
     const response = request.response;
